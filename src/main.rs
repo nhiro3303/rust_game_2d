@@ -1,18 +1,18 @@
-use std::time::Duration;
 use std::mem;
 use std::os::raw::c_void;
+use std::time::Duration;
 
 use c_str_macro::c_str;
 use cgmath::perspective;
-use cgmath::prelude::SquareMatrix;
+// use cgmath::prelude::SquareMatrix;
 
 use gl::types::{GLfloat, GLsizei, GLsizeiptr};
 
-use sdl2::keyboard::Keycode;
 use sdl2::event::Event;
-// use sdl2::pixels::Color; 
+use sdl2::keyboard::Keycode;
+// use sdl2::pixels::Color;
 
-use cgmath::num_traits::Float;
+// use cgmath::num_traits::Float;
 use std::f32;
 
 mod shader;
@@ -42,10 +42,11 @@ fn main() {
     let video_subsystem = sdl_context.video().unwrap();
 
     // プロファイルの設定
-    { // 使用するOpenGLのバージョン情報を指定し、OpenGLに対応したウィンドウを作成する
+    {
+        // 使用するOpenGLのバージョン情報を指定し、OpenGLに対応したウィンドウを作成する
         // GLAttr構造体の取得
         let gl_attribute = video_subsystem.gl_attr();
-        
+
         // Don't use deprecated OpenGL functions (OpenGLコンテキストのプロファイルを指定)
         gl_attribute.set_context_profile(sdl2::video::GLProfile::Core);
 
@@ -98,18 +99,19 @@ fn main() {
 
     let vertex = Vertex::new(
         (BUF_SIZE * mem::size_of::<GLfloat>()) as GLsizeiptr, // 頂点データのデータサイズ
-        buffer_array.as_ptr() as *const c_void, // 頂点データへのポインタ
-        gl::STATIC_DRAW, // 頂点データへのアクセス頻度
-        vec![gl::FLOAT], // 各頂点属性のデータ型を格納したベクター型
+        buffer_array.as_ptr() as *const c_void,               // 頂点データへのポインタ
+        gl::STATIC_DRAW,                                      // 頂点データへのアクセス頻度
+        vec![gl::FLOAT],        // 各頂点属性のデータ型を格納したベクター型
         vec![FLOAT_NUM as i32], // 各頂点属性のデータサイズを格納したベクター型
         FLOAT_NUM as i32 * mem::size_of::<GLfloat>() as GLsizei, // 各頂点データの始まりが何個おきに並んでいるか
-        VERTEX_NUM as i32, // 頂点の数
+        VERTEX_NUM as i32,                                       // 頂点の数
     );
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut loops: i32 = 0;
     'running: loop {
-        for event in event_pump.poll_iter() { // イベントキューにたまってるイベントをひとつづつ処理する
+        for event in event_pump.poll_iter() {
+            // イベントキューにたまってるイベントをひとつづつ処理する
             match event {
                 // 終了イベントかエスケープキーの押下イベントが発生したとき、runningラベルのついたループを抜ける
                 Event::Quit { .. }
@@ -121,7 +123,8 @@ fn main() {
             }
         }
         // canvas.present();
-        unsafe { // C言語由来の処理をunsafe{}で囲む
+        unsafe {
+            // C言語由来の処理をunsafe{}で囲む
             gl::Viewport(0, 0, WINDOW_WIDTH as i32, WINDOW_HEIGHT as i32);
 
             // clear screen
@@ -130,19 +133,24 @@ fn main() {
 
             // init matrice for model, view and projection
             // let model_matrix = Matrix4::identity();
-            let model_matrix = Matrix4::from_angle_y(cgmath::Rad(f32::consts::PI) * loops as f32 / 180f32); loops += 1;
-            let view_matrix = Matrix4::look_at(
-                Point3 { // 観測者の位置
+            let model_matrix =
+                Matrix4::from_angle_y(cgmath::Rad(f32::consts::PI) * loops as f32 / 180f32);
+            loops += 1;
+            let view_matrix = Matrix4::look_at_rh(
+                Point3 {
+                    // 観測者の位置
                     x: 0.0,
                     y: 0.0,
                     z: 5.0,
                 },
-                Point3 { // 見ているものの位置
+                Point3 {
+                    // 見ているものの位置
                     x: 0.0,
                     y: 0.0,
                     z: 0.0,
                 },
-                Vector3 { // 上下方向
+                Vector3 {
+                    // 上下方向
                     x: 0.0,
                     y: 1.0,
                     z: 0.0,
