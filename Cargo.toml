@@ -3,11 +3,13 @@ name = "rust_game_2d"
 version = "0.1.0"
 authors = ["hiro <nhiro3303@gmail.com>"]
 edition = "2018"
+license = "MIT"
+repository = "https://github.com/nhiro3303/rust_game_2d.git"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sdl2 = "0.32.2"
-cgmath = "0.17.0"
+sdl2 = "0.34.4"
+cgmath = "0.18.0"
 c_str_macro = "1.0.2"
 gl = "0.14.0"
