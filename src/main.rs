@@ -108,10 +108,25 @@ fn main() {
         VERTEX_NUM as i32,                                       // 頂点の数
     );
 
+    // init imgui
+    let mut imgui_context = imgui::Context::create();
+    // ウィジェットの位置などを保存する設定ファイルを作らない
+    imgui_context.set_ini_filename(None);
+
+    // init imgui sdl2
+    let mut imgui_sdl2_context = imgui_sdl2::ImguiSdl2::new(&mut imgui_context, &window);
+    let renderer = imgui_opengl_renderer::Renderer::new(&mut imgui_context, |s| {
+        video_subsystem.gl_get_proc_address(s) as _
+    });
+
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut loops: i32 = 0;
     'running: loop {
         for event in event_pump.poll_iter() {
+            imgui_sdl2_context.handle_event(&mut imgui_context, &event);
+            if imgui_sdl2_context.ignore_event(&event) {
+                continue;
+            }
             // イベントキューにたまってるイベントをひとつづつ処理する
             match event {
                 // 終了イベントかエスケープキーの押下イベントが発生したとき、runningラベルのついたループを抜ける
@@ -171,6 +186,18 @@ fn main() {
             shader.set_mat4(c_str!("uProjection"), &projection_matrix);
 
             vertex.draw(); // OpenGLによる描画
+
+            imgui_sdl2_context.prepare_frame(
+                imgui_context.io_mut(),
+                &window,
+                &event_pump.mouse_state()
+            );
+            let ui = imgui_context.frame();
+            imgui::Window::new(imgui::im_str!("Information"))
+                .size([300.0, 200.0], imgui::Condition::FirstUseEver)
+                .build(&ui, || {});
+            imgui_sdl2_context.prepare_render(&ui, &window);
+            renderer.render(ui);
 
             window.gl_swap_window(); // 描画結果をウィンドウ上に表示
         }
