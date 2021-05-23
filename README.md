@@ -3,6 +3,8 @@ imgui + sdl2で簡単にゲームっぽいもの
 
 
 
-## 参考文献
+## Demo
 
-- [Introduction - The Cargo Book (rust-lang.org)](https://doc.rust-lang.org/cargo/)
+第4章読了！
+
+![](sankaku.gif)
