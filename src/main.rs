@@ -196,7 +196,14 @@ fn main() {
             imgui::Window::new(imgui::im_str!("Information"))
                 .size([300.0, 200.0], imgui::Condition::FirstUseEver)
                 .build(&ui, || {
-                    ui.text(imgui::im_str!("Hello, World!"));
+                    ui.text(imgui::im_str!("OpenGL Test App ver0.1"));
+                    ui.separator();
+                    ui.text(imgui::im_str!("FPS: {:.1}", ui.io().framerate));
+                    let display_size = ui.io().display_size;
+                    ui.text(format!(
+                            "Display Size: ({:.1}, {:.1})",
+                            display_size[0], display_size[1]
+                    ));
                     let mouse_pos = ui.io().mouse_pos;
                     ui.text(format!(
                             "Mouse Position: ({:.1}, {:.1})",
