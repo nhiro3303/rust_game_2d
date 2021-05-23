@@ -63,7 +63,7 @@ fn main() {
         .opengl() // OpenGLを有効にする
         .position_centered() // ウィンドウをディスプレイの中央に配置する
         // .borderless() // ウィンドウのボーダーをなくす
-        // .resizeable() // ウィンドウのサイズを変更可能にする
+        // .resizable() // ウィンドウのサイズを変更可能にする
         // .fullscreen() // ウィンドウをフルスクリーンにする
         // .set_window_flags(0) // 上に列挙したような特性をフラグで指定する
         .build() // 上に列挙した特性をもつウィンドウを作成する
@@ -71,6 +71,7 @@ fn main() {
     // let window = match video_subsystem
     //     .window("SDL", WINDOW_WIDTH, WINDOW_HEIGHT)
     //     .position_centered()
+    //     .opengl()
     //     .build()
     //     { // エラー処理の例
     //         Ok(window)=>window,
