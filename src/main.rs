@@ -3,10 +3,11 @@ use std::os::raw::c_void;
 use std::time::Duration;
 
 use c_str_macro::c_str;
-use cgmath::perspective;
+use cgmath::{perspective, vec3};
 // use cgmath::prelude::SquareMatrix;
 
 use gl::types::{GLfloat, GLsizei, GLsizeiptr};
+use imgui::im_str;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -28,10 +29,10 @@ type Vector3 = cgmath::Vector3<f32>;
 #[allow(dead_code)]
 type Matrix4 = cgmath::Matrix4<f32>;
 
-const WINDOW_WIDTH: u32 = 600;
-const WINDOW_HEIGHT: u32 = 600;
+const WINDOW_WIDTH: u32 = 900;
+const WINDOW_HEIGHT: u32 = 480;
 const FLOAT_NUM: usize = 3;
-const VERTEX_NUM: usize = 3;
+const VERTEX_NUM: usize = 36;
 const BUF_SIZE: usize = FLOAT_NUM * VERTEX_NUM;
 
 fn main() {
@@ -86,10 +87,60 @@ fn main() {
 
     // set buffer
     #[rustfmt::skip]
-    let buffer_array: [f32;BUF_SIZE] = [
-        -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0,
+    let buffer_array: [f32; BUF_SIZE] = [
+        // 1
+        0.0, 0.0, 0.0,
         0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0,
+
+        0.0, 0.0, 0.0,
+        1.0, 1.0, 0.0,
+        1.0, 0.0, 0.0,
+
+        // 2
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+
+        0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 1.0,
+
+        // 3
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 1.0,
+        1.0, 0.0, 1.0,
+
+        0.0, 1.0, 1.0,
+        1.0, 0.0, 1.0,
+        1.0, 1.0, 1.0,
+
+        // 4
+        0.0, 1.0, 0.0,
+        0.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+
+        0.0, 1.0, 0.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 0.0,
+
+        // 5
+        1.0, 0.0, 1.0,
+        1.0, 0.0, 0.0,
+        1.0, 1.0, 0.0,
+
+        1.0, 0.0, 1.0,
+        1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0,
+
+        // 6
+        0.0, 1.0, 1.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0,
+
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 1.0,
     ];
 
     // キャンバスの取得と塗りつぶし
@@ -119,6 +170,14 @@ fn main() {
         video_subsystem.gl_get_proc_address(s) as _
     });
 
+    let mut depth_test: bool = true;
+    let mut blend: bool = true;
+    let mut wireframe: bool = true;
+    let mut culling: bool = true;
+    let mut camera_x: f32 = 3.0f32;
+    let mut camera_y: f32 = -3.0f32;
+    let mut camera_z: f32 = 3.0f32;
+
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut loops: i32 = 0;
     'running: loop {
@@ -141,35 +200,62 @@ fn main() {
         // canvas.present();
         unsafe {
             // C言語由来の処理をunsafe{}で囲む
+            if depth_test {
+                gl::Enable(gl::DEPTH_TEST);
+            } else {
+                gl::Disable(gl::DEPTH_TEST);
+            }
+
+            if blend {
+                gl::Enable(gl::BLEND);
+                gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            } else {
+                gl::Disable(gl::BLEND);
+            }
+
+            if wireframe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            } else {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            }
+
+            if culling {
+                gl::Enable(gl::CULL_FACE);
+            } else {
+                gl::Disable(gl::CULL_FACE);
+            }
+
             gl::Viewport(0, 0, WINDOW_WIDTH as i32, WINDOW_HEIGHT as i32);
 
             // clear screen
             gl::ClearColor(1.0, 1.0, 1.0, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT); // 描画する際にカラーバッファーを初期化する
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT); // COLOR_BUFFER_BIT : 描画する際にカラーバッファーを初期化する
+                                                                    // DEPTH_BUFFER_BIT : 描画する際にデプスバッファーを初期化する(DEPTH_TESTを有効にするときは忘れずに！)
 
             // init matrice for model, view and projection
             // let model_matrix = Matrix4::identity();
+            let buf: Vector3 = vec3( 0.5, 0.5, 0.0 );
             let model_matrix =
-                Matrix4::from_angle_y(cgmath::Rad(f32::consts::PI) * loops as f32 / 180f32);
+                Matrix4::from_translation(buf) * Matrix4::from_angle_z(cgmath::Rad(f32::consts::PI) * loops as f32 / 180f32) * Matrix4::from_translation(-buf);
             loops += 1;
             let view_matrix = Matrix4::look_at_rh(
                 Point3 {
                     // 観測者の位置
-                    x: 0.0,
-                    y: 0.0,
-                    z: 5.0,
+                    x: camera_x,
+                    y: camera_y,
+                    z: camera_z,
                 },
                 Point3 {
                     // 見ているものの位置
-                    x: 0.0,
-                    y: 0.0,
-                    z: 0.0,
+                    x: 0.5,
+                    y: 0.5,
+                    z: 0.5,
                 },
                 Vector3 {
                     // 上下方向
                     x: 0.0,
-                    y: 1.0,
-                    z: 0.0,
+                    y: 0.0,
+                    z: 1.0,
                 },
             );
             let projection_matrix: Matrix4 = perspective(
@@ -193,12 +279,12 @@ fn main() {
                 &event_pump.mouse_state()
             );
             let ui = imgui_context.frame();
-            imgui::Window::new(imgui::im_str!("Information"))
-                .size([300.0, 200.0], imgui::Condition::FirstUseEver)
+            imgui::Window::new(im_str!("Information"))
+                .size([300.0, 300.0], imgui::Condition::FirstUseEver)
                 .build(&ui, || {
-                    ui.text(imgui::im_str!("OpenGL Test App ver0.1"));
+                    ui.text(im_str!("OpenGL Test App ver0.1"));
                     ui.separator();
-                    ui.text(imgui::im_str!("FPS: {:.1}", ui.io().framerate));
+                    ui.text(im_str!("FPS: {:.1}", ui.io().framerate));
                     let display_size = ui.io().display_size;
                     ui.text(format!(
                             "Display Size: ({:.1}, {:.1})",
@@ -209,15 +295,34 @@ fn main() {
                             "Mouse Position: ({:.1}, {:.1})",
                             mouse_pos[0], mouse_pos[1]
                     ));
+                    ui.separator();
+                    ui.checkbox(im_str!("Depth Test"), &mut depth_test);
+                    ui.checkbox(im_str!("Blend"), &mut blend);
+                    ui.checkbox(im_str!("Wireframe"), &mut wireframe);
+                    ui.checkbox(im_str!("Culling"), &mut culling);
+                    ui.separator();
+                    #[rustfmt::skip]
+                    imgui::Slider::new(im_str!("Camera X"))
+                        .range(-5.0..=5.0)
+                        .build(&ui, &mut camera_x);
+                    #[rustfmt::skip]
+                    imgui::Slider::new(im_str!("Camera Y"))
+                        .range(-5.0..=5.0)
+                        .build(&ui, &mut camera_y);
+                    #[rustfmt::skip]
+                    imgui::Slider::new(im_str!("Camera Z"))
+                        .range(-5.0..=5.0)
+                        .build(&ui, &mut camera_z);
+                    ui.separator();
                     imgui::ProgressBar::new(0.6)
                         .size([200.0, 20.0])
-                        .overlay_text(imgui::im_str!("Progress!"))
+                        .overlay_text(im_str!("Progress!"))
                         .build(&ui);
                     let arr = [0.6f32, 0.1f32, 1.0f32, 0.5f32, 0.92f32, 0.1f32, 0.2f32];
-                    ui.plot_lines(imgui::im_str!("lines"), &arr)
+                    ui.plot_lines(im_str!("lines"), &arr)
                         .graph_size([200.0, 40.0])
                         .build();
-                    ui.plot_histogram(imgui::im_str!("histogram"), &arr)
+                    ui.plot_histogram(im_str!("histogram"), &arr)
                         .graph_size([200.0, 40.0])
                         .build();
                 });
